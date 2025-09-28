@@ -203,6 +203,12 @@ public class EmployeeManagementSystem {
                 if (emp != null) {
                     printEmployee(emp);
                     results.add(emp);
+                    printEmployee(emp);
+                    
+                    // Encapsulation demo
+                    System.out.println("Salary before bonus: " + emp.getSalary());
+                    emp.setSalary(emp.getSalary() + 500);  // example bonus
+                    System.out.println("Salary after bonus: " + emp.getSalary());
                 } else System.out.println("⚠ Employee not found.");
             }
             case "2" -> {
