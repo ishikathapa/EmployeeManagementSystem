@@ -1,334 +1,210 @@
 package employee;
 
+import javax.swing.*;
 import java.util.LinkedList;
 import java.util.Scanner;
+import java.util.Comparator;
+import java.io.File;
 
-/**
- * EmployeeManagementSystem
- * Main class containing the menu-driven interface
- * Allows user to manage employees with CRUD, search, file handling, and salary management
- */
 public class EmployeeManagementSystem {
 
-    private static LinkedList<Employee> employees = new LinkedList<>(); // Employee list
-    private static Scanner scanner = new Scanner(System.in);            // Scanner for input
+    public static LinkedList<Employee> employees = new LinkedList<>();
+    private static Scanner scanner = new Scanner(System.in);
 
     public static void main(String[] args) {
         while (true) {
-            showMenu();
+            System.out.println("\n===== Employee Management System =====");
+            System.out.println("1. Text-Based Interface (TBI)");
+            System.out.println("2. Graphical User Interface (GUI)");
+            System.out.println("3. Exit");
+            System.out.print("Enter choice: ");
             String choice = scanner.nextLine().trim();
-            switch (choice) {
-                case "1" -> loadFromFile();
-                case "2" -> addEmployee();
-                case "3" -> updateEmployee();
-                case "4" -> deleteEmployee();
-                case "5" -> viewEmployee();
-                case "6" -> saveToFile();
-                case "7" -> {  // Manage Performance/Salary
-                    System.out.print("Enter Employee ID: ");
-                    String id = scanner.nextLine().trim();
-                    Employee emp = findEmployeeById(id);
-                    if (emp != null) {
-                        managePerformance(emp);  // Pass the Employee object
-                    } else {
-                        System.out.println("⚠ Employee not found.");
-                    }
-                }
 
-                case "8" -> {
-                    System.out.println("👋 Exiting program. Goodbye!");
+            switch (choice) {
+                case "1" -> launchTBI();
+                case "2" -> launchGUI();
+                case "3" -> {
+                    System.out.println("Exiting program...");
                     System.exit(0);
                 }
-                default -> System.out.println("⚠ Invalid option. Please try again.");
+                default -> System.out.println("⚠ Invalid option, please try again.");
             }
         }
     }
 
-    /**
-     * Show the main menu
-     */
-    private static void showMenu() {
-        System.out.println("\n===== Employee Management System =====");
-        System.out.println("1. Load employee records from file");
-        System.out.println("2. Add new employee");
-        System.out.println("3. Update employee information");
-        System.out.println("4. Delete employee");
-        System.out.println("5. View employee details");
-        System.out.println("6. Save employee records to file");
-        System.out.println("7. Manage Performance/Salary");
-        System.out.println("8. Exit");
-        System.out.print("👉 Choose option: ");
+    private static void launchGUI() {
+        SwingUtilities.invokeLater(() -> new EMS_GUI(employees));
     }
 
-    /**
-     * Load employees from file
-     */
-    private static void loadFromFile() {
-        System.out.print("Enter filename: ");
-        String filename = scanner.nextLine();
-        employees = FileHandler.loadEmployeesLinked(filename);
-        System.out.println("✅ Loaded " + employees.size() + " employee(s).");
-    }
+    private static void launchTBI() {
+        while (true) {
+            System.out.println("\n===== TBI Menu =====");
+            System.out.println("1. Load Employees");
+            System.out.println("2. Add Employee");
+            System.out.println("3. Update Employee");
+            System.out.println("4. Delete Employee");
+            System.out.println("5. View Employees");
+            System.out.println("6. Search Employee");
+            System.out.println("7. Sort by Name");
+            System.out.println("8. Manage Performance/Salary");
+            System.out.println("9. Save Employees");
+            System.out.println("10. Return to Main Menu");
+            System.out.print("Enter choice: ");
 
-    /**
-     * Save employees to file
-     */
-    private static void saveToFile() {
-        System.out.print("Enter filename: ");
-        String filename = scanner.nextLine();
-        FileHandler.saveEmployeesLinked(filename, employees);
-    }
+            String choice = scanner.nextLine().trim();
 
-    /**
-     * Add new employee
-     */
-    private static void addEmployee() {
-        try {
-            System.out.print("Enter type (Manager/Intern/Regular): ");
-            String type = scanner.nextLine().trim();
-
-            System.out.print("Enter ID: ");
-            String id = scanner.nextLine().trim();
-            if (findEmployeeById(id) != null) {
-                System.out.println("⚠ Employee with this ID already exists!");
-                return;
+            switch (choice) {
+                case "1" -> loadEmployeesTBI();
+                case "2" -> addEmployeeTBI();
+                case "3" -> updateEmployeeTBI();
+                case "4" -> deleteEmployeeTBI();
+                case "5" -> viewEmployeesTBI(employees);
+                case "6" -> searchEmployeesTBI();
+                case "7" -> sortEmployeesTBI();
+                case "8" -> managePerformanceAndSalaryTBI();
+                case "9" -> saveEmployeesTBI();
+                case "10" -> { 
+                    System.out.println("Returning to main menu...");
+                    return; 
+                }
+                default -> System.out.println("⚠ Invalid choice. Try again.");
             }
-
-            System.out.print("Enter name: ");
-            String name = scanner.nextLine().trim();
-
-            System.out.print("Enter department: ");
-            String dept = scanner.nextLine().trim();
-
-            System.out.print("Enter salary: ");
-            double salary = Double.parseDouble(scanner.nextLine().trim());
-
-            System.out.print("Enter rating (1-5): ");
-            int rating = Integer.parseInt(scanner.nextLine().trim());
-            if (rating < 1 || rating > 5) {
-                System.out.println("⚠ Rating must be between 1 and 5.");
-                return;
-            }
-
-            Employee emp = switch (type.toLowerCase()) {
-                case "manager" -> new Manager(id, name, dept, salary, rating);
-                case "intern" -> new Intern(id, name, dept, salary, rating);
-                case "regular" -> new Regular(id, name, dept, salary, rating);
-                default -> null;
-            };
-
-            if (emp == null) {
-                System.out.println("⚠ Invalid employee type.");
-                return;
-            }
-
-            employees.add(emp);
-            System.out.println("✅ Employee added successfully.");
-        } catch (NumberFormatException e) {
-            System.out.println("⚠ Invalid input. Salary and rating must be numbers.");
         }
     }
 
-    /**
-     * Update existing employee
-     */
-    private static void updateEmployee() {
-        System.out.print("Enter employee ID to update: ");
-        Employee emp = findEmployeeById(scanner.nextLine().trim());
-        if (emp == null) {
-            System.out.println("⚠ Employee not found.");
+    // =================== TBI Functions ===================
+    private static void loadEmployeesTBI() {
+        System.out.print("Enter filename: ");
+        String filename = scanner.nextLine();
+        File f = new File(filename);
+        if (!f.exists()) {
+            System.out.println("⚠ File not found!");
+            return;
+        }
+        employees = FileHandler.loadEmployees(filename);
+        System.out.println("✅ Loaded " + employees.size() + " employees.");
+    }
+
+    private static void saveEmployeesTBI() {
+        System.out.print("Enter filename to save: ");
+        String filename = scanner.nextLine();
+        FileHandler.saveEmployees(filename, employees);
+        System.out.println("✅ Employees saved successfully.");
+    }
+
+    private static void addEmployeeTBI() {
+        System.out.print("Enter type (Manager/Intern/Regular): ");
+        String type = scanner.nextLine();
+
+        System.out.print("Enter ID: ");
+        String id = scanner.nextLine();
+        if (findEmployeeById(id) != null) {
+            System.out.println("⚠ Employee ID already exists!");
             return;
         }
 
-        System.out.print("New name (blank to keep): ");
-        String name = scanner.nextLine().trim();
-        if (!name.isEmpty()) emp.setName(name);
+        System.out.print("Enter Name: ");
+        String name = scanner.nextLine();
+        System.out.print("Enter Department: ");
+        String dept = scanner.nextLine();
+        System.out.print("Enter Base Salary: ");
+        double salary = Double.parseDouble(scanner.nextLine());
+        System.out.print("Enter Rating (1-5): ");
+        int rating = Integer.parseInt(scanner.nextLine());
 
-        System.out.print("New department (blank to keep): ");
-        String dept = scanner.nextLine().trim();
-        if (!dept.isEmpty()) emp.setDepartment(dept);
+        Employee emp = switch (type.toLowerCase()) {
+            case "manager" -> new Manager(id, name, dept, salary, rating);
+            case "intern" -> new Intern(id, name, dept, salary, rating);
+            case "regular" -> new Regular(id, name, dept, salary, rating);
+            default -> null;
+        };
 
-        System.out.print("New salary (blank to keep): ");
-        String sal = scanner.nextLine().trim();
-        if (!sal.isEmpty()) {
-            try {
-                emp.setSalary(Double.parseDouble(sal));
-            } catch (NumberFormatException e) {
-                System.out.println("⚠ Invalid salary. Keeping old value.");
-            }
+        if (emp == null) {
+            System.out.println("⚠ Invalid employee type.");
+            return;
         }
 
-        System.out.print("New rating 1-5 (blank to keep): ");
-        String rat = scanner.nextLine().trim();
-        if (!rat.isEmpty()) {
-            try {
-                int r = Integer.parseInt(rat);
-                if (r >= 1 && r <= 5) emp.setPerformanceRating(r);
-                else System.out.println("⚠ Invalid rating. Keeping old value.");
-            } catch (NumberFormatException e) {
-                System.out.println("⚠ Invalid input. Keeping old value.");
-            }
-        }
+        employees.add(emp);
+        System.out.println("✅ Employee added successfully.");
+    }
+
+    private static void updateEmployeeTBI() {
+        System.out.print("Enter ID to update: ");
+        Employee emp = findEmployeeById(scanner.nextLine());
+        if (emp == null) { System.out.println("⚠ Employee not found."); return; }
+
+        System.out.print("New Name (" + emp.getName() + "): ");
+        String name = scanner.nextLine();
+        if (!name.isBlank()) emp.setName(name);
+
+        System.out.print("New Department (" + emp.getDepartment() + "): ");
+        String dept = scanner.nextLine();
+        if (!dept.isBlank()) emp.setDepartment(dept);
+
+        System.out.print("New Salary (" + emp.getSalary() + "): ");
+        String sal = scanner.nextLine();
+        if (!sal.isBlank()) emp.setSalary(Double.parseDouble(sal));
+
+        System.out.print("New Rating (" + emp.getPerformanceRating() + "): ");
+        String rat = scanner.nextLine();
+        if (!rat.isBlank()) emp.setPerformanceRating(Integer.parseInt(rat));
+
         System.out.println("✅ Employee updated successfully.");
     }
 
-    /**
-     * Delete employee
-     */
-    private static void deleteEmployee() {
+    private static void deleteEmployeeTBI() {
         System.out.print("Enter ID to delete: ");
-        Employee emp = findEmployeeById(scanner.nextLine().trim());
-        if (emp == null) {
-            System.out.println("⚠ Employee not found.");
-            return;
-        }
-        employees.remove(emp);
-        System.out.println("✅ Employee deleted successfully.");
+        Employee emp = findEmployeeById(scanner.nextLine());
+        if (emp != null) { employees.remove(emp); System.out.println("✅ Employee deleted successfully."); }
+        else System.out.println("⚠ Employee not found.");
     }
 
-    /**
-     * View/Search employees
-     */
-    private static void viewEmployee() {
-        System.out.println("Search by: 1-ID  2-Name  3-Rating");
-        System.out.print("Option: ");
-        String opt = scanner.nextLine().trim();
-
-        LinkedList<Employee> results = new LinkedList<>();
-
-        switch (opt) {
-            case "1" -> {
-                System.out.print("Enter Employee ID: ");
-                Employee emp = findEmployeeById(scanner.nextLine().trim());
-                if (emp != null) {
-                    printEmployee(emp);
-                    results.add(emp);
-                    printEmployee(emp);
-                    
-                    // Encapsulation demo
-                    System.out.println("Salary before bonus: " + emp.getSalary());
-                    emp.setSalary(emp.getSalary() + 500);  // example bonus
-                    System.out.println("Salary after bonus: " + emp.getSalary());
-                } else System.out.println("⚠ Employee not found.");
-            }
-            case "2" -> {
-                System.out.print("Enter Employee Name (keyword): ");
-                String name = scanner.nextLine().trim().toLowerCase();
-                for (Employee emp : employees) {
-                    if (emp.getName().toLowerCase().contains(name)) {
-                        printEmployee(emp);
-                        results.add(emp);
-                    }
-                }
-                if (results.isEmpty()) System.out.println("⚠ No employees found.");
-            }
-            case "3" -> {
-                System.out.print("Enter minimum performance rating (1-5): ");
-                try {
-                    int rating = Integer.parseInt(scanner.nextLine().trim());
-                    for (Employee emp : employees) {
-                        if (emp.getPerformanceRating() >= rating) {
-                            printEmployee(emp);
-                            results.add(emp);
-                        }
-                    }
-                    if (results.isEmpty()) System.out.println("⚠ No employees found.");
-                } catch (NumberFormatException e) {
-                    System.out.println("⚠ Invalid rating input.");
-                }
-            }
-            default -> {
-                System.out.println("⚠ Invalid option.");
-                return;
-            }
-        }
-
-        // Save query results to file
-        if (!results.isEmpty()) {
-            System.out.print("Save results to file? (y/n): ");
-            if (scanner.nextLine().trim().equalsIgnoreCase("y")) {
-                System.out.print("Enter filename: ");
-                String filename = scanner.nextLine().trim();
-                FileHandler.saveQueryResults(results, filename);
-            }
-        }
+    private static void viewEmployeesTBI(LinkedList<Employee> list) {
+        if (list.isEmpty()) { System.out.println("⚠ No employees found."); return; }
+        System.out.println("\n===== Employee Records =====");
+        for (Employee emp : list) { System.out.println(emp); }
     }
 
-    /**
-     * Manage performance and salary of an employee
-     */
-    private static void managePerformance(Employee emp) {
-        // Display basic employee info
-        System.out.println("Employee: " + emp.getName() + ", Base Salary: " + emp.getSalary());
-
-        // Calculate automatic bonus
-        double autoBonus = emp.calculateSalary() - emp.getSalary();
-        double totalSalary = emp.getSalary() + autoBonus;
-
-        // Issue performance letter
-        if(emp.getPerformanceRating() <= 2) {
-            System.out.println("⚠ Warning Letter issued to " + emp.getName());
-        } else if(emp.getPerformanceRating() >= 4) {
-            System.out.println("🎉 Appreciation Letter issued to " + emp.getName());
-        } else {
-            System.out.println(emp.getName() + "'s performance is satisfactory.");
-        }
-
-        // Ask user for bonus or fine
-        System.out.println("Choose action: 1 - Apply Automatic Bonus | 2 - Apply Fine");
-        String choice = scanner.nextLine().trim();
-
-        switch(choice) {
-            case "1": // Bonus applied automatically
-                System.out.println("💰 Automatic bonus applied: " + autoBonus);
-                System.out.println("💰 Total Salary (Base + Bonus): " + totalSalary);
-                break;
-            case "2": // Fine manually applied
-                try {
-                    System.out.print("Enter fine amount: ");
-                    double fine = Double.parseDouble(scanner.nextLine().trim());
-                    double salaryAfterFine = totalSalary - fine;
-                    System.out.println("⚠ Fine applied: " + fine);
-                    System.out.println("💰 Total Salary after fine: " + salaryAfterFine);
-                } catch (NumberFormatException e) {
-                    System.out.println("⚠ Invalid amount entered.");
-                }
-                break;
-            default:
-                System.out.println("⚠ Invalid option.");
-        }
+    private static void searchEmployeesTBI() {
+        System.out.print("Enter name keyword: ");
+        String key = scanner.nextLine().toLowerCase();
+        LinkedList<Employee> result = new LinkedList<>();
+        for (Employee emp : employees) { if (emp.getName().toLowerCase().contains(key)) result.add(emp); }
+        viewEmployeesTBI(result);
     }
 
+    private static void sortEmployeesTBI() {
+        employees.sort(Comparator.comparing(Employee::getName));
+        System.out.println("✅ Employees sorted by name.");
+    }
 
+    private static void managePerformanceAndSalaryTBI() {
+        System.out.print("Enter Employee ID: ");
+        String id = scanner.nextLine().trim();
+        Employee emp = findEmployeeById(id);
+        if (emp == null) { System.out.println("⚠ Employee not found."); return; }
 
+        if (emp.getPerformanceRating() <= 2) System.out.println("⚠ Warning Letter issued to " + emp.getName());
+        else if (emp.getPerformanceRating() >= 4) System.out.println("🏅 Appreciation Letter issued to " + emp.getName());
+        else System.out.println(emp.getName() + "'s performance is satisfactory.");
 
+        System.out.println("Do you want to adjust salary? (1 = Yes, 2 = No)");
+        String choice = scanner.nextLine();
+        if (choice.equals("1")) {
+            System.out.println("Choose action: 1 - Add Bonus  |  2 - Apply Fine");
+            String action = scanner.nextLine();
+            try {
+                System.out.print("Enter amount: ");
+                double amount = Double.parseDouble(scanner.nextLine());
+                if (action.equals("1")) { emp.setSalary(emp.getSalary() + amount); System.out.println("💰 Bonus added. New salary: " + emp.getSalary()); }
+                else if (action.equals("2")) { emp.setSalary(emp.getSalary() - amount); System.out.println("⚠ Fine applied. New salary: " + emp.getSalary()); }
+                else System.out.println("Invalid action.");
+            } catch (Exception e) { System.out.println("Invalid input for amount."); }
+        } else System.out.println("Salary adjustment skipped.");
+    }
 
-    
-
-    /**
-     * Find employee by ID
-     */
     private static Employee findEmployeeById(String id) {
-        for (Employee emp : employees) {
-            if (emp.getId().equalsIgnoreCase(id)) return emp;
-        }
+        for (Employee emp : employees) { if (emp.getId().equals(id)) return emp; }
         return null;
     }
-
-    /**
-     * Print employee details
-     */
-    private static void printEmployee(Employee emp) {
-        // Calculate total salary using automatic bonus logic from subclass
-        double calculatedSalary = emp.calculateSalary();
-        double autoBonus = calculatedSalary - emp.getSalary(); // automatic bonus only
-
-        // Print employee details, automatic bonus, and total calculated salary
-        System.out.println(
-            emp.toString() + 
-            ", Automatic Bonus: " + autoBonus + 
-            ", Total Calculated Salary: " + calculatedSalary
-        );
-    }
-
 }
